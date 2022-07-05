@@ -22,7 +22,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features --workspace --test-threads=1
+          args: --all-features --workspace -- --test-threads=1
 
   rustfmt:
     name: Rustfmt
