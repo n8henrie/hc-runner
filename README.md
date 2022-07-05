@@ -1,4 +1,4 @@
-# {{project-name}}
+# runner
 
 master: [![master branch build status](https://github.com/n8henrie/runner-rs/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/n8henrie/runner-rs/actions/workflows/build.yml)
 
@@ -7,6 +7,9 @@ master: [![master branch build status](https://github.com/n8henrie/runner-rs/act
 A personal project that runs commands and submits the execution result to a
 local URL, for building a local dashboard for my automations. Kind of like a
 toy version of <https://healthchecks.io/>.
+
+
+Not to be confused with <https://github.com/stevedonovan/runner>.
 
 ## Quickstart
 
