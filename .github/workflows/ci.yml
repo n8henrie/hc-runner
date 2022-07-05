@@ -87,6 +87,8 @@ jobs:
   publish-dry-run:
     name: Publish dry run
     runs-on: ubuntu-latest
+    env:
+      URL: "https://n8henrie.com"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
