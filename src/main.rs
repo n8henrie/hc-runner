@@ -8,13 +8,11 @@ type Error = Box<dyn error::Error + Send + Sync>;
 type Result<T> = result::Result<T, Error>;
 
 fn main() -> Result<()> {
-    // Set URL at compile time for release builds but not for debug builds to
-    // facilitate testing with mock server
-    let url = if cfg!(debug_assertions) {
-        env::var("URL")?
-    } else {
-        env!("URL").to_string()
-    };
+    // Use compiled-in URL by default but fall back to runtime for testing
+    let url = option_env!("URL")
+        .map(ToOwned::to_owned)
+        .unwrap_or(env::var("URL")?);
+
     let args = env::args();
     let exit_code = runner::run(url, args)?;
     io::stdout().flush()?;
