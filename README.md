@@ -19,4 +19,11 @@ $ cd runner-rs
 $ export URL=your.server.url
 $ cargo build --release
 $ ./target/release/runner say_foo echo foo
+foo
+$ echo $?
+0
+$ ./target/release/runner fail bash -c 'echo bar >/dev/stderr; exit 1'
+bar
+$ echo $?
+1
 ```
