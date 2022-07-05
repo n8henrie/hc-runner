@@ -11,7 +11,9 @@ fn main() -> Result<()> {
     // Use compiled-in URL by default but fall back to runtime for testing
     let url = option_env!("URL")
         .map(ToOwned::to_owned)
-        .unwrap_or(env::var("URL")?);
+        .unwrap_or_else(|| {
+            env::var("URL").expect("Missing environment variable: URL")
+        });
 
     let args = env::args();
     let exit_code = runner::run(url, args)?;
