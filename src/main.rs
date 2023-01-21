@@ -1,3 +1,4 @@
+#![warn(clippy::pedantic)]
 use std::env;
 use std::io::{self, Write};
 use std::process::exit;

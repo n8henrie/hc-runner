@@ -1,3 +1,4 @@
+#![warn(clippy::pedantic)]
 use std::env::Args;
 use std::io::{self, Write};
 use std::process::Command;
@@ -17,6 +18,8 @@ pub struct RunnerMessage {
     pub exit_code: u8,
 }
 
+/// # Errors
+/// Returns the exit code of the command
 pub fn run(url: impl AsRef<str>, args: Args) -> Result<i32> {
     let mut args = args.into_iter().skip(1);
     let name = args
