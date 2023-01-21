@@ -8,16 +8,11 @@ use std::{error, result};
 type Error = Box<dyn error::Error + Send + Sync>;
 type Result<T> = result::Result<T, Error>;
 
-fn main() -> Result<()> {
-    // Use compiled-in URL by default but fall back to runtime for testing
-    let url = option_env!("URL")
-        .map(ToOwned::to_owned)
-        .unwrap_or_else(|| {
-            env::var("URL").expect("Missing environment variable: URL")
-        });
+const URL: &str = env!("URL");
 
+fn main() -> Result<()> {
     let args = env::args();
-    let exit_code = runner::run(url, args)?;
+    let exit_code = runner::run(URL, args)?;
     io::stdout().flush()?;
     io::stderr().flush()?;
     exit(exit_code);
