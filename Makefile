@@ -14,6 +14,10 @@ install: src/*.rs
 			until test -s "$${TMPDIR}"/out.txt; do sleep 0.1; done; \
 			'
 
+.PHONY: clean
+clean:
+	cargo clean
+
 .PHONY: test
 test:
 	cargo test --features=mocks -- --test-threads=1
