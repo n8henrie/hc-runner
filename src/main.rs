@@ -8,11 +8,16 @@ use std::{error, result};
 type Error = Box<dyn error::Error + Send + Sync>;
 type Result<T> = result::Result<T, Error>;
 
-const URL: &str = env!("URL");
-
 fn main() -> Result<()> {
+    #[cfg(feature = "mocks")]
+    let url: &str =
+        &env::var("URL").expect("Missing environment variable: URL");
+
+    #[cfg(not(feature = "mocks"))]
+    let url: &str = env!("URL");
+
     let args = env::args();
-    let exit_code = runner::run(URL, args)?;
+    let exit_code = runner::run(url, args)?;
     io::stdout().flush()?;
     io::stderr().flush()?;
     exit(exit_code);
