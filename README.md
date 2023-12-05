@@ -13,6 +13,10 @@ Not to be confused with <https://github.com/stevedonovan/runner>.
 
 ## Quickstart
 
+Of note, the environment variable `URL` is *compile-time* embedded into the
+binary and in my case is a HomeAssistant webhook reporting the exit status of
+the script (and a little contextual stdout / stderr type info).
+
 ```console
 $ git clone https://github.com/n8henrie/runner-rs.git
 $ cd runner-rs
@@ -27,3 +31,5 @@ bar
 $ echo $?
 1
 ```
+
+Alternatively, see the Makefile.
