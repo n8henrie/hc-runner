@@ -1,15 +1,20 @@
 #![warn(clippy::pedantic)]
 use std::env::Args;
 use std::io::{self, Write};
-use std::process::Command;
+use std::process::{exit, Command};
 use std::time::Duration;
 use std::{error, result};
 
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use chrono::prelude::*;
+
 type Error = Box<dyn error::Error + Send + Sync>;
 type Result<T> = result::Result<T, Error>;
+
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RunnerMessage {
@@ -20,11 +25,22 @@ pub struct RunnerMessage {
 
 /// # Errors
 /// Returns the exit code of the command
-pub fn run(url: impl AsRef<str>, args: Args) -> Result<i32> {
-    let mut args = args.into_iter().skip(1);
-    let name = args
-        .next()
-        .ok_or_else(|| Error::from("no script name provided"))?;
+pub fn run(url: impl AsRef<str>, args: &mut Args) -> Result<i32> {
+    // Discard $0
+    let _ = args.next();
+
+    let name = args.next();
+    let name = match name.as_deref() {
+        Some("-V" | "--version") => {
+            writeln!(io::stdout(), "{CARGO_PKG_NAME} version {VERSION}")?;
+            exit(0);
+        }
+        Some(name) => name,
+        None => return Err(Error::from("no script name provided")),
+    };
+
+    let now = Local::now();
+    writeln!(io::stderr(), "Starting `{name}` at {now}")?;
 
     let output = if cfg!(target_os = "macos") {
         Command::new("/usr/bin/caffeinate").args(args).output()?
@@ -62,7 +78,10 @@ pub fn run(url: impl AsRef<str>, args: Args) -> Result<i32> {
 
     if !res.status().is_success() {
         let text = res.text()?;
-        println!("failed to update status: {text}");
+        writeln!(io::stderr(), "failed to update status: {text}")?;
     }
+
+    let now = Local::now();
+    writeln!(io::stderr(), "Ending `{name}` at {now}")?;
     Ok(exit_code)
 }

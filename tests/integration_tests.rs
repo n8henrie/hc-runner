@@ -38,7 +38,12 @@ fn catches_stderr() -> Result<()> {
         .output()?;
 
     let stderr = str::from_utf8(&result.stderr)?;
-    assert!(stderr.trim().ends_with("No such file or directory"));
+    assert!(stderr
+        .trim()
+        .lines()
+        .nth(1)
+        .unwrap()
+        .ends_with("No such file or directory"));
     assert!(!result.status.success());
     Ok(())
 }
@@ -55,8 +60,15 @@ fn catches_stdout_and_stderr() -> Result<()> {
         ])
         .output()?;
 
-    assert_eq!(str::from_utf8(&result.stdout)?, "foo\n");
-    assert_eq!(str::from_utf8(&result.stderr)?, "bar\n");
+    assert_eq!(str::from_utf8(&result.stdout)?.trim(), "foo");
+    assert_eq!(
+        str::from_utf8(&result.stderr)?
+            .lines()
+            .nth(1)
+            .unwrap()
+            .trim(),
+        "bar"
+    );
     assert!(result.status.success());
     Ok(())
 }

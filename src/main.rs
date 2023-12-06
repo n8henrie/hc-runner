@@ -2,7 +2,6 @@
 use std::env;
 use std::io::{self, Write};
 use std::process::exit;
-
 use std::{error, result};
 
 type Error = Box<dyn error::Error + Send + Sync>;
@@ -16,8 +15,8 @@ fn main() -> Result<()> {
     #[cfg(not(feature = "mocks"))]
     let url: &str = env!("URL");
 
-    let args = env::args();
-    let exit_code = runner::run(url, args)?;
+    let mut args = env::args();
+    let exit_code = runner::run(url, &mut args)?;
     io::stdout().flush()?;
     io::stderr().flush()?;
     exit(exit_code);
