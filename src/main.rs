@@ -3,7 +3,7 @@ use std::env;
 use std::io::{self, Write};
 use std::process::exit;
 
-use tracing::{warn};
+use tracing::warn;
 use tracing_subscriber::{self, EnvFilter};
 
 use runner::{run, Result};
