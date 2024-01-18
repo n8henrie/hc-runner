@@ -1,5 +1,8 @@
 use std::{env, error, process, result, str};
 
+use httpmock::prelude::*;
+use httpmock::Method::HEAD;
+
 type Error = Box<dyn error::Error + Send + Sync>;
 type Result<T> = result::Result<T, Error>;
 
@@ -41,7 +44,7 @@ fn catches_stderr() -> Result<()> {
     assert!(stderr
         .trim()
         .lines()
-        .nth(1)
+        .next()
         .unwrap()
         .ends_with("No such file or directory"));
     assert!(!result.status.success());
@@ -64,7 +67,7 @@ fn catches_stdout_and_stderr() -> Result<()> {
     assert_eq!(
         str::from_utf8(&result.stderr)?
             .lines()
-            .nth(1)
+            .next()
             .unwrap()
             .trim(),
         "bar"
@@ -91,46 +94,50 @@ fn propagates_error() -> Result<()> {
 
 #[test]
 fn calls_server_success() -> Result<()> {
-    use runner::RunnerMessage;
     let server = setup_server(false);
 
-    let runner_mock = server.mock(|when, then| {
-        when.json_body_obj(&RunnerMessage {
-            name: String::from("winner"),
-            // Only stderr is captured
-            message: String::from(""),
-            exit_code: 0,
-        });
+    let mock_start = server.mock(|when, then| {
+        when.method(HEAD)
+            .path_matches(Regex::new("/winner/start$").unwrap())
+            .query_param("create", "1");
+        then.status(200);
+    });
+    let mock_end = server.mock(|when, then| {
+        when.method(POST)
+            .path_matches(Regex::new("/winner/0$").unwrap());
         then.status(200);
     });
 
     let status = process::Command::new(EXE)
         .args(["winner", "echo", "hooray!"])
         .status()?;
-    runner_mock.assert();
+    mock_start.assert();
+    mock_end.assert();
     assert!(status.success());
     Ok(())
 }
 
 #[test]
 fn calls_server_error() -> Result<()> {
-    use runner::RunnerMessage;
-
     let server = setup_server(false);
 
-    let runner_mock = server.mock(|when, then| {
-        when.json_body_obj(&RunnerMessage {
-            name: String::from("failer"),
-            message: String::from("whups\n"),
-            exit_code: 7,
-        });
+    let mock_start = server.mock(|when, then| {
+        when.method(HEAD)
+            .path_matches(Regex::new("/failer/start$").unwrap())
+            .query_param("create", "1");
+        then.status(200);
+    });
+    let mock_end = server.mock(|when, then| {
+        when.method(POST)
+            .path_matches(Regex::new("/failer/7$").unwrap());
         then.status(200);
     });
 
     let status = process::Command::new(EXE)
         .args(["failer", "bash", "-c", "echo whups > /dev/stderr; exit 7"])
         .status()?;
-    runner_mock.assert();
+    mock_start.assert();
+    mock_end.assert();
     assert!(!status.success());
     Ok(())
 }

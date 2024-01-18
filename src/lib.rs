@@ -1,31 +1,28 @@
 #![warn(clippy::pedantic)]
 use std::env::Args;
+use std::fmt::Debug;
 use std::io::{self, Write};
 use std::process::{exit, Command};
 use std::time::Duration;
 use std::{error, result};
 
-use serde::{Deserialize, Serialize};
-use serde_json::json;
-
-use chrono::prelude::*;
+use reqwest::{Client, Url};
+use tracing::{info, warn};
 
 type Error = Box<dyn error::Error + Send + Sync>;
-type Result<T> = result::Result<T, Error>;
+pub type Result<T> = result::Result<T, Error>;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct RunnerMessage {
-    pub name: String,
-    pub message: String,
-    pub exit_code: u8,
-}
-
 /// # Errors
 /// Returns the exit code of the command
-pub fn run(url: impl AsRef<str>, args: &mut Args) -> Result<i32> {
+#[tracing::instrument]
+pub async fn run<T>(url: T, args: &mut Args) -> Result<i32>
+where
+    T: Debug,
+    String: From<T>,
+{
     // Discard $0
     let _ = args.next();
 
@@ -35,12 +32,27 @@ pub fn run(url: impl AsRef<str>, args: &mut Args) -> Result<i32> {
             writeln!(io::stdout(), "{CARGO_PKG_NAME} version {VERSION}")?;
             exit(0);
         }
-        Some(name) => name,
+        Some(name) => name.to_string(),
         None => return Err(Error::from("no script name provided")),
     };
 
-    let now = Local::now();
-    writeln!(io::stderr(), "Starting `{name}` at {now}")?;
+    // `join` will only interpret the last segment of the path as a directory if it has a trailing slash
+    // https://docs.rs/reqwest/latest/reqwest/struct.Url.html#method.join
+    let url = Url::parse((String::from(url) + "/").as_str())?
+        .join((name + "/").as_ref())?;
+    info!("using base url: {}", url);
+
+    let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
+
+    let start_req = {
+        let client = client.clone();
+        let mut url = url.join("start")?;
+        tokio::spawn(async move {
+            url.set_query(Some("create=1"));
+            info!("calling start url {}", url);
+            client.head(url).send().await
+        })
+    };
 
     let output = if cfg!(target_os = "macos") {
         Command::new("/usr/bin/caffeinate").args(args).output()?
@@ -65,23 +77,18 @@ pub fn run(url: impl AsRef<str>, args: &mut Args) -> Result<i32> {
     };
 
     let stderr = std::str::from_utf8(&stderr)?;
-    let data = json!({
-        "name":     name,
-        "message":  stderr,
-        "exit_code": exit_code,
-    });
 
-    let client = reqwest::blocking::Client::builder()
-        .timeout(Duration::from_secs(10))
-        .build()?;
-    let res = client.post(url.as_ref()).body(data.to_string()).send()?;
+    let _ = start_req.await?;
+    let res = {
+        let url = url.join(exit_code.to_string().as_ref())?;
+        info!("calling end url {}", url);
+        client.post(url).body(stderr.to_string()).send().await?
+    };
 
     if !res.status().is_success() {
-        let text = res.text()?;
+        let text = res.text().await?;
         writeln!(io::stderr(), "failed to update status: {text}")?;
     }
 
-    let now = Local::now();
-    writeln!(io::stderr(), "Ending `{name}` at {now}")?;
     Ok(exit_code)
 }
