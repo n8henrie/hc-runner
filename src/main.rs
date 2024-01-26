@@ -20,10 +20,10 @@ async fn main() -> Result<()> {
 
     #[cfg(feature = "mocks")]
     let url: &str =
-        &env::var("URL").expect("Missing environment variable: URL");
+        &env::var("RUNNER_URL").expect("Missing environment variable: URL");
 
     #[cfg(not(feature = "mocks"))]
-    let url: &str = env!("URL");
+    let url: &str = env!("RUNNER_URL");
 
     let mut args = env::args();
     let exit_code = run(url, &mut args).await?;

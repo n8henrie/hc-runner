@@ -18,7 +18,7 @@ fn setup_server(ignore: bool) -> httpmock::MockServer {
         });
     }
 
-    env::set_var("URL", dbg!(server.url("")));
+    env::set_var("RUNNER_URL", dbg!(server.url("")));
     server
 }
 
