@@ -40,7 +40,7 @@ where
     // https://docs.rs/reqwest/latest/reqwest/struct.Url.html#method.join
     let url = {
         let url = url.as_ref();
-        let url = if url.ends_with("/") {
+        let url = if url.ends_with('/') {
             Cow::Borrowed(url)
         } else {
             Cow::Owned(String::from(url) + "/")
