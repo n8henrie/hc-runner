@@ -1,4 +1,5 @@
 #![warn(clippy::pedantic)]
+use std::borrow::Cow;
 use std::env::Args;
 use std::fmt::Debug;
 use std::io::{self, Write};
@@ -20,8 +21,7 @@ const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
 #[tracing::instrument]
 pub async fn run<T>(url: T, args: &mut Args) -> Result<i32>
 where
-    T: Debug,
-    String: From<T>,
+    T: Debug + AsRef<str>,
 {
     // Discard $0
     let _ = args.next();
@@ -38,8 +38,15 @@ where
 
     // `join` will only interpret the last segment of the path as a directory if it has a trailing slash
     // https://docs.rs/reqwest/latest/reqwest/struct.Url.html#method.join
-    let url = Url::parse((String::from(url) + "/").as_str())?
-        .join((name + "/").as_ref())?;
+    let url = {
+        let url = url.as_ref();
+        let url = if url.ends_with("/") {
+            Cow::Borrowed(url)
+        } else {
+            Cow::Owned(String::from(url) + "/")
+        };
+        Url::parse(url.as_ref())?.join((name + "/").as_ref())?
+    };
     info!("using base url: {}", url);
 
     let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
