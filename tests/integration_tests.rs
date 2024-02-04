@@ -6,7 +6,7 @@ use httpmock::Method::HEAD;
 type Error = Box<dyn error::Error + Send + Sync>;
 type Result<T> = result::Result<T, Error>;
 
-const EXE: &str = env!("CARGO_BIN_EXE_runner");
+const EXE: &str = env!("CARGO_BIN_EXE_hc-runner");
 
 fn setup_server(ignore: bool) -> httpmock::MockServer {
     let server: httpmock::MockServer = httpmock::MockServer::start();
