@@ -5,8 +5,6 @@ use clap::builder::NonEmptyStringValueParser;
 use clap::Parser;
 use reqwest::Url;
 
-/// # Errors
-/// if s can't be parse as URL
 pub(crate) fn parse_url(s: &str) -> Result<Url> {
     // subsequent calls to `join` will only interpret the last segment of the
     // path as a directory if it has a trailing slash
@@ -40,7 +38,7 @@ pub struct Config {
     #[arg(short, long, default_value("10"))]
     pub(crate) timeout: u64,
 
-    /// Override the compiled-in URL for this call
+    /// Specify the URL of the healthchecks server for this call
     #[arg(short, long, value_parser=parse_url)]
     pub(crate) url: Option<Url>,
 

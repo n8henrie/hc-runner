@@ -3,7 +3,7 @@
 use std::io::{self, Write};
 use std::process::Command;
 use std::time::Duration;
-use std::{error, result};
+use std::{env, error, result};
 
 use reqwest::Client;
 use tracing::{info, warn};
@@ -16,15 +16,7 @@ use config::parse_url;
 pub use config::Config;
 
 fn default_url() -> Result<reqwest::Url> {
-    #[cfg(feature = "mocks")]
-    let url = env::var("HC_RUNNER_URL")
-        .expect("Missing environment variable: URL")
-        .as_ref();
-
-    #[cfg(not(feature = "mocks"))]
-    let url = env!("HC_RUNNER_URL");
-
-    parse_url(url)
+    parse_url(env::var("HC_RUNNER_URL")?.as_ref())
 }
 
 /// # Errors

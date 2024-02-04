@@ -1,7 +1,4 @@
-include config.env
-export
-
-PROJECT=runner
+PROJECT=hc-runner
 
 .PHONY: install
 install: src/*.rs
@@ -23,4 +20,4 @@ clean:
 
 .PHONY: test
 test:
-	cargo test --features=mocks -- --test-threads=1
+	cargo test -- --test-threads=1

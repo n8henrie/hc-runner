@@ -14,6 +14,3 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 [dev-dependencies]
 httpmock = "0.7"
-
-[features]
-mocks = []

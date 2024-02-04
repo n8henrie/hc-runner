@@ -9,11 +9,10 @@ configurable instance of [healthchecks.io] (>=v3, requires auto-provisioning).
 
 Not to be confused with <https://github.com/stevedonovan/runner>.
 
-## Warning
-
-The environment variable `RUNNER_URL` is *compile-time* embedded into the
-binary, which has security implications\*. `runner` uses [healthcheck.io]'s
-[pinging API with "slugs"][0] so that a single base URL can be used.
+Either the environment variable `HC_RUNNER_URL` or the `--url` flag is required
+at runtime, which specifies the slug-based ping URL for your healthchecks
+server. If you're using the hosted healthchecks server, this may look something
+like `https://hc-ping.com/{ping_key}/`.
 
 \* Per [healthchecks.io], one's ping key should remain secret. If the `runner`
 binary is world-readable, embedded strings could be extracted by a malicious
@@ -40,7 +39,7 @@ Example:
 ```console
 $ git clone https://github.com/n8henrie/runner-rs.git
 $ cd runner-rs
-$ export RUNNER_URL=your.server.url
+$ export HC_RUNNER_URL=your.server.url
 $ cargo build --release
 $ ./target/release/runner say_foo echo foo
 foo
@@ -56,9 +55,9 @@ $ echo $?
 
 ### testing
 
-The integration tests use the `httpmock` library to provide a mock server. In
-order to allow `RUNNER_URL` to be mocked at runtime, testing requires the
-`mocks` feature to be enabled; `make test` should take care of this for you.
+The integration tests use the `httpmock` library to provide a mock server.
+Testing should be done with `--test-threads=1` or errors will likely result. The
+`make test` target sets this for you.
 
 ### macOS
 
