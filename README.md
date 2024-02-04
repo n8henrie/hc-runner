@@ -75,7 +75,16 @@ sensitive directories such as `~/Desktop`, `~/Documents`, `~/Downloads`, don't
 bother with this. If you *do* use this approach, you'll have to remove a check
 named `runner-rs-setup-delete-me` from your [healthchecks.io] instance.
 
-## Acknowledgements
+### Alternatives
+
+There are several similar projects on crates.io that may be much more
+comprehensive and/or functional than this hobby project. I encourage you to
+check them out! Here are a couple:
+
+- https://github.com/msfjarvis/healthchecks-rs
+- https://github.com/dimo414/task-mon
+
+# Acknowledgements
 
 - Pēteris Caune, creator of [healthchecks.io]!
 
