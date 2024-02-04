@@ -1,69 +1,70 @@
 #![warn(clippy::pedantic)]
-use std::borrow::Cow;
-use std::env::Args;
-use std::fmt::Debug;
+
 use std::io::{self, Write};
-use std::process::{exit, Command};
+use std::process::Command;
 use std::time::Duration;
 use std::{error, result};
 
-use reqwest::{Client, Url};
+use reqwest::Client;
 use tracing::{info, warn};
 
 type Error = Box<dyn error::Error + Send + Sync>;
 pub type Result<T> = result::Result<T, Error>;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-const CARGO_PKG_NAME: &str = env!("CARGO_PKG_NAME");
+mod config;
+use config::parse_url;
+pub use config::Config;
+
+fn default_url() -> Result<reqwest::Url> {
+    #[cfg(feature = "mocks")]
+    let url = env::var("HC_RUNNER_URL")
+        .expect("Missing environment variable: URL")
+        .as_ref();
+
+    #[cfg(not(feature = "mocks"))]
+    let url = env!("HC_RUNNER_URL");
+
+    parse_url(url)
+}
 
 /// # Errors
 /// Returns the exit code of the command
 #[tracing::instrument]
-pub async fn run<T>(url: T, args: &mut Args) -> Result<i32>
-where
-    T: Debug + AsRef<str>,
-{
-    // Discard $0
-    let _ = args.next();
+pub async fn run(config: Config) -> Result<u8> {
+    let name = config.slug;
 
-    let name = args.next();
-    let name = match name.as_deref() {
-        Some("-V" | "--version") => {
-            writeln!(io::stdout(), "{CARGO_PKG_NAME} version {VERSION}")?;
-            exit(0);
-        }
-        Some(name) => name.to_string(),
-        None => return Err(Error::from("no script name provided")),
-    };
-
-    // `join` will only interpret the last segment of the path as a directory if it has a trailing slash
-    // https://docs.rs/reqwest/latest/reqwest/struct.Url.html#method.join
-    let url = {
-        let url = url.as_ref();
-        let url = if url.ends_with('/') {
-            Cow::Borrowed(url)
-        } else {
-            Cow::Owned(String::from(url) + "/")
-        };
-        Url::parse(url.as_ref())?.join((name + "/").as_ref())?
-    };
+    let url = config
+        .url
+        .map_or_else(default_url, Ok)?
+        .join((name + "/").as_ref())?;
     info!("using base url: {}", url);
 
-    let client = Client::builder().timeout(Duration::from_secs(10)).build()?;
+    let client = Client::builder()
+        .timeout(Duration::from_secs(config.timeout))
+        .build()?;
 
-    let start_req = {
+    // Some commands can be allowed to fail periodically and I only want a
+    // healthchecks notification if there are zero successes in a period of
+    // time. For these, use the `--success-only` flag, which will only update
+    // healthchecks when there is a successful run.
+    let start_req = if config.success_only {
+        None
+    } else {
         let client = client.clone();
         let mut url = url.join("start")?;
-        tokio::spawn(async move {
+        Some(tokio::spawn(async move {
             url.set_query(Some("create=1"));
             info!("calling start url {}", url);
             client.head(url).send().await
-        })
+        }))
     };
 
     let output = if cfg!(target_os = "macos") {
-        Command::new("/usr/bin/caffeinate").args(args).output()?
+        Command::new("/usr/bin/caffeinate")
+            .args(config.command)
+            .output()?
     } else {
+        let mut args = config.command.iter();
         let cmd = args
             .next()
             .ok_or_else(|| Error::from("No command specified"))?;
@@ -85,17 +86,25 @@ where
 
     let stderr = std::str::from_utf8(&stderr)?;
 
-    let _ = start_req.await?;
-    let res = {
-        let url = url.join(exit_code.to_string().as_ref())?;
-        info!("calling end url {}", url);
-        client.post(url).body(stderr.to_string()).send().await?
+    if let Some(req) = start_req {
+        let _ = req.await?;
     };
 
-    if !res.status().is_success() {
-        let text = res.text().await?;
-        writeln!(io::stderr(), "failed to update status: {text}")?;
+    match (config.success_only, exit_code) {
+        (false, _) | (true, 0) => {
+            let res = {
+                let url = url.join(exit_code.to_string().as_ref())?;
+                info!("calling end url {}", url);
+                client.post(url).body(stderr.to_string()).send().await?
+            };
+
+            if !res.status().is_success() {
+                let text = res.text().await?;
+                writeln!(io::stderr(), "failed to update status: {text}")?;
+            };
+        }
+        _ => (),
     }
 
-    Ok(exit_code)
+    Ok(exit_code.try_into()?)
 }
