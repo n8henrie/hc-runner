@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn test_verbose_conflicts_with_quiet() {
-        let base = vec!["", "--slug=test"];
+        let base = ["", "--slug=test"];
         assert!(Config::try_parse_from(
             base.iter().chain(["-v", "fake_command"].iter())
         )
