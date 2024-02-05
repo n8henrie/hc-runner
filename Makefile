@@ -21,3 +21,7 @@ clean:
 .PHONY: test
 test:
 	cargo test -- --test-threads=1
+
+.PHONY: lint
+lint:
+	cargo clippy --all-targets --all-features --workspace -- --warn clippy::pedantic
