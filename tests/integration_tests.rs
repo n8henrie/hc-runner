@@ -18,7 +18,7 @@ fn setup_server(ignore: bool) -> httpmock::MockServer {
         });
     }
 
-    env::set_var("RUNNER_URL", dbg!(server.url("")));
+    env::set_var("HC_RUNNER_URL", dbg!(server.url("")));
     server
 }
 
@@ -26,7 +26,7 @@ fn setup_server(ignore: bool) -> httpmock::MockServer {
 fn catches_stdout() -> Result<()> {
     setup_server(true);
     let result = process::Command::new(EXE)
-        .args(["_", "echo", "-n", "foo"])
+        .args(["--slug=_", "--", "echo", "-n", "foo"])
         .output()?;
     assert_eq!(str::from_utf8(&result.stdout)?, "foo");
     assert!(result.status.success());
@@ -37,7 +37,7 @@ fn catches_stdout() -> Result<()> {
 fn catches_stderr() -> Result<()> {
     setup_server(true);
     let result = process::Command::new(EXE)
-        .args(["_", "grep", "foo", "bar"])
+        .args(["--slug=_", "grep", "foo", "bar"])
         .output()?;
 
     let stderr = str::from_utf8(&result.stderr)?;
@@ -56,7 +56,7 @@ fn catches_stdout_and_stderr() -> Result<()> {
     setup_server(true);
     let result = process::Command::new(EXE)
         .args([
-            "_",
+            "--slug=_",
             "/bin/bash",
             "-c",
             "echo foo > /dev/stdout; echo bar > /dev/stderr",
@@ -79,7 +79,9 @@ fn catches_stdout_and_stderr() -> Result<()> {
 #[test]
 fn propagates_success() -> Result<()> {
     setup_server(true);
-    let status = process::Command::new(EXE).args(["_", "true"]).status()?;
+    let status = process::Command::new(EXE)
+        .args(["--slug=_", "true"])
+        .status()?;
     assert!(status.success());
     Ok(())
 }
@@ -87,7 +89,9 @@ fn propagates_success() -> Result<()> {
 #[test]
 fn propagates_error() -> Result<()> {
     setup_server(true);
-    let status = process::Command::new(EXE).args(["_", "false"]).status()?;
+    let status = process::Command::new(EXE)
+        .args(["--slug=_", "false"])
+        .status()?;
     assert!(!status.success());
     Ok(())
 }
@@ -109,7 +113,7 @@ fn calls_server_success() -> Result<()> {
     });
 
     let status = process::Command::new(EXE)
-        .args(["winner", "echo", "hooray!"])
+        .args(["--slug=winner", "echo", "hooray!"])
         .status()?;
     mock_start.assert();
     mock_end.assert();
@@ -134,7 +138,12 @@ fn calls_server_error() -> Result<()> {
     });
 
     let status = process::Command::new(EXE)
-        .args(["failer", "bash", "-c", "echo whups > /dev/stderr; exit 7"])
+        .args([
+            "--slug=failer",
+            "bash",
+            "-c",
+            "echo whups > /dev/stderr; exit 7",
+        ])
         .status()?;
     mock_start.assert();
     mock_end.assert();

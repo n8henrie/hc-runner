@@ -72,8 +72,8 @@ mod tests {
         );
         for config in vec![
             Config::parse_from(["", "--slug=fake", "cat"]),
-            Config::parse_from(["", "--slug fake", "--", "cat"]),
-            Config::parse_from(["", "-s fake", "cat"]),
+            Config::parse_from(["", "--slug", "fake", "--", "cat"]),
+            Config::parse_from(["", "-s", "fake", "cat"]),
         ] {
             assert_eq!(config.slug, "fake");
             assert_eq!(config.success_only, false);
@@ -82,24 +82,36 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_command_required() {
-        Config::parse_from(["", "--slug=no_command_no_dashes"]);
+        assert!(Config::try_parse_from(["", "--slug=no_command_no_dashes"])
+            .is_err())
     }
 
     #[test]
-    #[should_panic]
     fn test_command_required_with_dashes() {
-        Config::parse_from([
+        assert!(Config::try_parse_from([
             "",
             "--slug",
             "no command after the dashes",
             "--",
-        ]);
+        ])
+        .is_err());
     }
 
     #[test]
     fn test_verbose_conflicts_with_quiet() {
-        Config::parse_from(["", "--slug=test", "-v", "-q"]);
+        let base = vec!["", "--slug=test"];
+        assert!(Config::try_parse_from(
+            base.iter().chain(["-v", "fake_command"].iter())
+        )
+        .is_ok());
+        assert!(Config::try_parse_from(
+            base.iter().chain(["-q", "fake_command"].iter())
+        )
+        .is_ok());
+        assert!(Config::try_parse_from(
+            base.iter().chain(["-q", "-v", "fake_command"].iter())
+        )
+        .is_err());
     }
 }
