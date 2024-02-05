@@ -76,7 +76,7 @@ mod tests {
             Config::parse_from(["", "-s", "fake", "cat"]),
         ] {
             assert_eq!(config.slug, "fake");
-            assert_eq!(config.success_only, false);
+            assert!(!config.success_only);
             assert_eq!(config.command, vec!["cat"]);
         }
     }
@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn test_command_required() {
         assert!(Config::try_parse_from(["", "--slug=no_command_no_dashes"])
-            .is_err())
+            .is_err());
     }
 
     #[test]
