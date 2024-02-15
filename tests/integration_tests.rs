@@ -100,8 +100,9 @@ fn propagates_success() {
     setup_server(true);
     let status = process::Command::new(EXE)
         .args(["--slug=_", "true"])
-        .status()
-        .unwrap();
+        .output()
+        .unwrap()
+        .status;
     assert!(status.success());
 }
 
@@ -110,8 +111,9 @@ fn propagates_error() {
     setup_server(true);
     let status = process::Command::new(EXE)
         .args(["--slug=_", "false"])
-        .status()
-        .unwrap();
+        .output()
+        .unwrap()
+        .status;
     assert!(!status.success());
 }
 
@@ -122,8 +124,9 @@ fn calls_server_success() {
 
     let status = process::Command::new(EXE)
         .args(["--slug=winner", "echo", "hooray!"])
-        .status()
-        .unwrap();
+        .output()
+        .unwrap()
+        .status;
     mock_start.assert();
     mock_end.assert();
     assert!(status.success());
@@ -152,8 +155,9 @@ fn calls_server_error() {
             "-c",
             "echo whups > /dev/stderr; exit 7",
         ])
-        .status()
-        .unwrap();
+        .output()
+        .unwrap()
+        .status;
     mock_start.assert();
     mock_end.assert();
     assert!(!status.success());
