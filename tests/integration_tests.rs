@@ -163,7 +163,7 @@ fn calls_server_error() {
     assert!(!status.success());
 }
 
-/// Returns the TempDir to prevent destruction at the end of the function
+/// Returns the `TempDir` to prevent destruction at the end of the function
 fn temp_config(contents: impl AsRef<str>) -> tempfile::TempDir {
     let home = tempdir().unwrap();
     env::set_var("HOME", home.path());
@@ -279,7 +279,7 @@ fn env_overrides_file() {
     env::remove_var("HC_RUNNER_URL");
 
     // Set a broken url by in the config file, failure shows it was used
-    let _tmp = temp_config(format!(r#"url = "http://broken""#));
+    let _tmp = temp_config(r#"url = "http://broken""#);
     let status = cmd.output().unwrap().status;
     mock_start.assert_hits(0);
     mock_end.assert_hits(0);

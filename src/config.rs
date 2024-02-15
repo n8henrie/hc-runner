@@ -103,7 +103,7 @@ impl Config {
 
         let url = cli
             .url
-            .or_else(|| settings.url)
+            .or(settings.url)
             .ok_or_else(|| Error::Config("Base URL not found".into()))?;
 
         let verbosity =
