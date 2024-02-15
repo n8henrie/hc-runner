@@ -9,13 +9,13 @@ install: src/*.rs
 .PHONY: install-macos
 install-macos: install
 	TMPDIR=$$(mktemp -d) bash -c '\
-			trap "launchctl bootout gui/$${UID}/$(PROJECT)_tmp" EXIT; \
-			launchctl submit -l come.n8henrie.$(PROJECT)_tmp -o "$${TMPDIR}"/out.txt -e "$${TMPDIR}"/err.txt \
+			trap "launchctl bootout gui/$${UID}/com.n8henrie.$(PROJECT)_tmp" EXIT; \
+			launchctl submit -l com.n8henrie.$(PROJECT)_tmp -o "$${TMPDIR}"/out.txt -e "$${TMPDIR}"/err.txt \
 				-- ~/.cargo/bin/$(PROJECT) \
 				--slug runner-rs-setup-delete-me \
 				--url http://fake \
-				ls ~/Desktop ~/Downloads ~/Documents \
-				|| true; \
+				-- \
+				ls ~/Desktop ~/Downloads ~/Documents; \
 			until test -s "$${TMPDIR}"/out.txt; do sleep 0.1; done; \
 			'
 
