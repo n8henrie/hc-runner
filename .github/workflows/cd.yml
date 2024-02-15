@@ -107,4 +107,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - run: cargo publish --token "${{ secrets.CARGO_API_KEY }}"
+      - run: cargo publish --token "${{ secrets.HC_RUNNER_CARGO_PUBLISH_TOKEN }}"
