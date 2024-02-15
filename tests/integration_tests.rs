@@ -1,11 +1,8 @@
-use std::{env, error, fs, process, result, str};
+use std::{env, fs, process, str};
 
 use httpmock::prelude::*;
 use httpmock::{Method::HEAD, Mock};
 use tempfile::tempdir;
-
-type Error = Box<dyn error::Error + Send + Sync>;
-type Result<T> = result::Result<T, Error>;
 
 const EXE: &str = env!("CARGO_BIN_EXE_hc-runner");
 
@@ -24,24 +21,25 @@ fn setup_server(ignore: bool) -> httpmock::MockServer {
 }
 
 #[test]
-fn catches_stdout() -> Result<()> {
+fn catches_stdout() {
     setup_server(true);
     let result = process::Command::new(EXE)
         .args(["--slug=_", "--", "echo", "-n", "foo"])
-        .output()?;
-    assert_eq!(str::from_utf8(&result.stdout)?, "foo");
+        .output()
+        .unwrap();
+    assert_eq!(str::from_utf8(&result.stdout).unwrap(), "foo");
     assert!(result.status.success());
-    Ok(())
 }
 
 #[test]
-fn catches_stderr() -> Result<()> {
+fn catches_stderr() {
     setup_server(true);
     let result = process::Command::new(EXE)
         .args(["--slug=_", "grep", "foo", "bar"])
-        .output()?;
+        .output()
+        .unwrap();
 
-    let stderr = str::from_utf8(&result.stderr)?;
+    let stderr = str::from_utf8(&result.stderr).unwrap();
     assert!(stderr
         .trim()
         .lines()
@@ -49,7 +47,6 @@ fn catches_stderr() -> Result<()> {
         .unwrap()
         .ends_with("No such file or directory"));
     assert!(!result.status.success());
-    Ok(())
 }
 
 fn successful_run<'a>(
@@ -73,7 +70,7 @@ fn successful_run<'a>(
 }
 
 #[test]
-fn catches_stdout_and_stderr() -> Result<()> {
+fn catches_stdout_and_stderr() {
     setup_server(true);
     let result = process::Command::new(EXE)
         .args([
@@ -82,11 +79,13 @@ fn catches_stdout_and_stderr() -> Result<()> {
             "-c",
             "echo foo > /dev/stdout; echo bar > /dev/stderr",
         ])
-        .output()?;
+        .output()
+        .unwrap();
 
-    assert_eq!(str::from_utf8(&result.stdout)?.trim(), "foo");
+    assert_eq!(str::from_utf8(&result.stdout).unwrap().trim(), "foo");
     assert_eq!(
-        str::from_utf8(&result.stderr)?
+        str::from_utf8(&result.stderr)
+            .unwrap()
             .lines()
             .next()
             .unwrap()
@@ -94,45 +93,44 @@ fn catches_stdout_and_stderr() -> Result<()> {
         "bar"
     );
     assert!(result.status.success());
-    Ok(())
 }
 
 #[test]
-fn propagates_success() -> Result<()> {
+fn propagates_success() {
     setup_server(true);
     let status = process::Command::new(EXE)
         .args(["--slug=_", "true"])
-        .status()?;
+        .status()
+        .unwrap();
     assert!(status.success());
-    Ok(())
 }
 
 #[test]
-fn propagates_error() -> Result<()> {
+fn propagates_error() {
     setup_server(true);
     let status = process::Command::new(EXE)
         .args(["--slug=_", "false"])
-        .status()?;
+        .status()
+        .unwrap();
     assert!(!status.success());
-    Ok(())
 }
 
 #[test]
-fn calls_server_success() -> Result<()> {
+fn calls_server_success() {
     let server = setup_server(false);
     let (mock_start, mock_end) = successful_run(&server, "winner");
 
     let status = process::Command::new(EXE)
         .args(["--slug=winner", "echo", "hooray!"])
-        .status()?;
+        .status()
+        .unwrap();
     mock_start.assert();
     mock_end.assert();
     assert!(status.success());
-    Ok(())
 }
 
 #[test]
-fn calls_server_error() -> Result<()> {
+fn calls_server_error() {
     let server = setup_server(false);
 
     let mock_start = server.mock(|when, then| {
@@ -154,11 +152,11 @@ fn calls_server_error() -> Result<()> {
             "-c",
             "echo whups > /dev/stderr; exit 7",
         ])
-        .status()?;
+        .status()
+        .unwrap();
     mock_start.assert();
     mock_end.assert();
     assert!(!status.success());
-    Ok(())
 }
 
 /// Returns the TempDir to prevent destruction at the end of the function
