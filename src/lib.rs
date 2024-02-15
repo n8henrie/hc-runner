@@ -3,32 +3,69 @@
 use std::io::{self, Write};
 use std::process::Command;
 use std::time::Duration;
-use std::{env, error, result};
 
-use reqwest::Client;
+use reqwest::{Client, Url};
 use tracing::{info, warn};
 
-type Error = Box<dyn error::Error + Send + Sync>;
-pub type Result<T> = result::Result<T, Error>;
+extern crate config as config_rs;
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 mod config;
-use config::parse_url;
 pub use config::Config;
 
-fn default_url() -> Result<reqwest::Url> {
-    parse_url(env::var("HC_RUNNER_URL")?.as_ref())
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("config error")]
+    Cli(#[from] clap::error::Error),
+    #[error("error in config: {0}")]
+    Config(String),
+    #[error(transparent)]
+    EnvVar(#[from] std::env::VarError),
+    #[error("error parsing flags")]
+    Settings(#[from] config_rs::ConfigError),
+    #[error("command was empty")]
+    EmptyCommand,
+    #[error("command exited with empty exit status code")]
+    EmptyExitCode,
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error("join error")]
+    Join(#[from] tokio::task::JoinError),
+    #[error(transparent)]
+    ParseInt(#[from] std::num::ParseIntError),
+    #[error(transparent)]
+    ParseFilter(#[from] tracing_subscriber::filter::ParseError),
+    #[error(transparent)]
+    ParseUrl(#[from] url::ParseError),
+    #[error("reqwest error")]
+    Reqwest(#[from] reqwest::Error),
+    #[error(transparent)]
+    TryFromInt(#[from] std::num::TryFromIntError),
+    #[error("unknown hc-runner error")]
+    Unknown,
+    #[error(transparent)]
+    Utf8(#[from] std::str::Utf8Error),
+}
+
+fn add_slug(mut url: Url, slug: String) -> Result<Url> {
+    // Calls to `join` will only interpret the last segment of the path as a
+    // directory if it has a trailing slash
+    // https://docs.rs/reqwest/latest/reqwest/struct.Url.html#method.join
+    let path = url.path();
+    if !path.ends_with('/') {
+        url.set_path(&(path.to_string() + "/"));
+    };
+
+    let with_slug = url.join(&(slug + "/"))?;
+    Ok(with_slug)
 }
 
 /// # Errors
 /// Returns the exit code of the command
 #[tracing::instrument]
 pub async fn run(config: Config) -> Result<u8> {
-    let name = config.slug;
-
-    let url = config
-        .url
-        .map_or_else(default_url, Ok)?
-        .join((name + "/").as_ref())?;
+    let url = add_slug(config.url, config.slug)?;
     info!("using base url: {}", url);
 
     let client = Client::builder()
@@ -57,9 +94,7 @@ pub async fn run(config: Config) -> Result<u8> {
             .output()?
     } else {
         let mut args = config.command.iter();
-        let cmd = args
-            .next()
-            .ok_or_else(|| Error::from("No command specified"))?;
+        let cmd = args.next().ok_or_else(|| Error::EmptyCommand)?;
         Command::new(cmd).args(args).output()?
     };
 
@@ -71,9 +106,7 @@ pub async fn run(config: Config) -> Result<u8> {
     let exit_code = if status.success() {
         0
     } else {
-        status
-            .code()
-            .ok_or_else(|| Error::from("could not determine status code"))?
+        status.code().ok_or_else(|| Error::EmptyExitCode)?
     };
 
     let stderr = std::str::from_utf8(&stderr)?;
