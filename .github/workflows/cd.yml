@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Cargo build
         run: |
-          ${{ matrix.job.use-cross && 'cargo install cargo-binstall; cargo binstall cross;' || 'true' }}
+          ${{ matrix.job.use-cross && 'cargo install cargo-binstall; cargo binstall --no-confirm cross;' || 'true' }}
           ${{ matrix.job.use-cross && 'cross' || 'cargo' }} build --release --target ${{ matrix.job.target }}
       - name: install strip command
         shell: bash
