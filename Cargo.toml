@@ -5,14 +5,18 @@ edition = "2021"
 description = "Command runner for healthchecks.io"
 license = "MIT"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-clap = { version = "4.4.18", features = ["derive"] }
-reqwest = "0.11.23"
-tokio = { version = "1.35.1", features = ["full"] }
-tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+clap = { version = "4", features = ["derive"] }
+config = { version = "0.14", default-features = false, features = ["toml"] }
+directories = "5"
+reqwest = "0.11"
+serde = { version = "1", features = ["derive"] }
+tempfile = "3"
+thiserror = "1"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+url = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
 httpmock = "0.7"
