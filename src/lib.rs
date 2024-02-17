@@ -18,32 +18,46 @@ pub use config::Config;
 pub enum Error {
     #[error("config error")]
     Cli(#[from] clap::error::Error),
+
     #[error("error in config: {0}")]
     Config(String),
+
     #[error(transparent)]
     EnvVar(#[from] std::env::VarError),
+
     #[error("error parsing flags")]
     Settings(#[from] config_rs::ConfigError),
+
     #[error("command was empty")]
     EmptyCommand,
+
     #[error("command exited with empty exit status code")]
     EmptyExitCode,
+
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
     #[error("join error")]
     Join(#[from] tokio::task::JoinError),
+
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
+
     #[error(transparent)]
     ParseFilter(#[from] tracing_subscriber::filter::ParseError),
+
     #[error(transparent)]
     ParseUrl(#[from] url::ParseError),
+
     #[error("reqwest error")]
     Reqwest(#[from] reqwest::Error),
+
     #[error(transparent)]
     TryFromInt(#[from] std::num::TryFromIntError),
+
     #[error("unknown hc-runner error")]
     Unknown,
+
     #[error(transparent)]
     Utf8(#[from] std::str::Utf8Error),
 }
