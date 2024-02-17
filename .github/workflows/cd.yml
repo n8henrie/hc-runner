@@ -72,6 +72,7 @@ jobs:
       - name: Packaging final binary
         shell: bash
         run: |
+          set -x
           cd target/"${{ matrix.job.target }}"/release
 
           ####### reduce binary size by removing debug symbols #######
