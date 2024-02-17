@@ -1,5 +1,6 @@
 #![warn(clippy::pedantic)]
 
+use std::fmt;
 use std::io::{self, Write};
 use std::process::Command;
 use std::time::Duration;
@@ -14,22 +15,21 @@ pub type Result<T> = std::result::Result<T, Error>;
 mod config;
 pub use config::Config;
 
-#[derive(thiserror::Error, Debug)]
+#[derive(thiserror::Error)]
 pub enum Error {
-    #[error("config error")]
+    #[error(transparent)]
     Cli(#[from] clap::error::Error),
 
-    #[error("error in config: {0}")]
+    /// Logical error in configuration
+    #[error("config error: {0}")]
     Config(String),
 
     #[error(transparent)]
     EnvVar(#[from] std::env::VarError),
 
-    #[error("error parsing flags")]
+    /// Error with configuration file or environment variables
+    #[error("settings error: {0}")]
     Settings(#[from] config_rs::ConfigError),
-
-    #[error("command was empty")]
-    EmptyCommand,
 
     #[error("command exited with empty exit status code")]
     EmptyExitCode,
@@ -37,7 +37,7 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
-    #[error("join error")]
+    #[error("join error: {0}")]
     Join(#[from] tokio::task::JoinError),
 
     #[error(transparent)]
@@ -49,7 +49,7 @@ pub enum Error {
     #[error(transparent)]
     ParseUrl(#[from] url::ParseError),
 
-    #[error("reqwest error")]
+    #[error(transparent)]
     Reqwest(#[from] reqwest::Error),
 
     #[error(transparent)]
@@ -60,6 +60,12 @@ pub enum Error {
 
     #[error(transparent)]
     Utf8(#[from] std::str::Utf8Error),
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{self}")
+    }
 }
 
 fn add_slug(mut url: Url, slug: String) -> Result<Url> {
@@ -108,7 +114,9 @@ pub async fn run(config: Config) -> Result<u8> {
             .output()?
     } else {
         let mut args = config.command.iter();
-        let cmd = args.next().ok_or_else(|| Error::EmptyCommand)?;
+        let cmd = args
+            .next()
+            .ok_or_else(|| Error::Config("command was empty".into()))?;
         Command::new(cmd).args(args).output()?
     };
 
