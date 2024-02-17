@@ -85,8 +85,8 @@ jobs:
           "$GCC_PREFIX"strip $BINARY_NAME
 
           ########## create tar.gz ##########
-          RELEASE_NAME=hc-runner-${GITHUB_REF/refs\/tags\//}-"${{ matrix.job.os-name }}-${{ matrix.job.architecture }}"
-          tar czvf $RELEASE_NAME.tar.gz $BINARY_NAME
+          RELEASE_NAME="hc-runner-${{  github.ref_name }}-${{ matrix.job.os-name }}-${{ matrix.job.architecture }}"
+          tar czvf "$RELEASE_NAME.tar.gz" "$BINARY_NAME"
 
           ########## create sha256 ##########
           if [[ "${{ runner.os  }}" == 'Windows' ]]; then
