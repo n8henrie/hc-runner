@@ -55,6 +55,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.job.target }}
       - name: Checkout repository
         uses: actions/checkout@v4
       - name: Cargo build
