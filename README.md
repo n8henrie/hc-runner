@@ -5,8 +5,6 @@ master: [![master branch build status](https://github.com/n8henrie/runner-rs/act
 A personal project that runs commands and submits the execution result to a
 configurable instance of [healthchecks.io] (>=v3, requires auto-provisioning).
 
-Not to be confused with <https://github.com/stevedonovan/runner>.
-
 The URL for your HealthChecks instance, including your `ping_key`, is required
 at runtime\*. Because the `ping_key` is considered a secret, users may wish to
 keep it out of their shell history and out of any cron scripts that are calling
