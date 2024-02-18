@@ -75,7 +75,7 @@ fn catches_stdout_and_stderr() {
     let result = process::Command::new(EXE)
         .args([
             "--slug=_",
-            "/bin/bash",
+            "bash",
             "-c",
             "echo foo > /dev/stdout; echo bar > /dev/stderr",
         ])

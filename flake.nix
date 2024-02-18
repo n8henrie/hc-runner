@@ -44,7 +44,10 @@
             src = ./.;
             cargoLock.lockFile = ./Cargo.lock;
             __darwinAllowLocalNetworking = true;
-            buildInputs = [pkgs.darwin.apple_sdk.frameworks.SystemConfiguration];
+            nativeBuildInputs = [pkgs.pkg-config];
+            buildInputs = with pkgs; ([openssl]
+              ++ lib.optionals stdenv.isDarwin
+              [darwin.apple_sdk.frameworks.SystemConfiguration]);
             dontUseCargoParallelTests = true;
           };
         };
