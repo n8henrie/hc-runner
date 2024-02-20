@@ -17,38 +17,22 @@ jobs:
             os-name: macos
             target: x86_64-apple-darwin
             architecture: x86_64
-            binary-postfix: ""
-            use-cross: false
           - os: macos-14
             os-name: macos
-            target: x86_64-apple-darwin
+            target: aarch64-apple-darwin
             architecture: arm64
-            binary-postfix: ""
-            use-cross: false
           - os: ubuntu-latest
             os-name: linux
             target: x86_64-unknown-linux-gnu
             architecture: x86_64
-            binary-postfix: ""
-            use-cross: false
           - os: windows-latest
             os-name: windows
             target: x86_64-pc-windows-msvc
             architecture: x86_64
-            binary-postfix: ".exe"
-            use-cross: false
           - os: ubuntu-latest
             os-name: linux
             target: aarch64-unknown-linux-gnu
             architecture: arm64
-            binary-postfix: ""
-            use-cross: true
-          - os: ubuntu-latest
-            os-name: linux
-            target: i686-unknown-linux-gnu
-            architecture: i686
-            binary-postfix: ""
-            use-cross: true
 
     steps:
       - name: Install Rust toolchain
@@ -58,17 +42,15 @@ jobs:
           target: ${{ matrix.job.target }}
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: install cross-compilation tools
+        if:  ${{ matrix.job.target == 'aarch64-unknown-linux-gnu' }}
+        run: |
+          sudo apt update
+          sudo apt-get install -y binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu
+          echo CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc >> $GITHUB_ENV
       - name: Cargo build
         run: |
-          ${{ matrix.job.use-cross && 'cargo install cross' || 'true' }}
-          ${{ matrix.job.use-cross && 'cross' || 'cargo' }} build --release --target ${{ matrix.job.target }}
-      - name: install strip command
-        shell: bash
-        run: |
-          if [[ "${{ matrix.job.target }}" == aarch64-unknown-linux-gnu ]]; then
-              sudo apt update
-              sudo apt-get install -y binutils-aarch64-linux-gnu
-          fi
+          cargo build --release --target ${{ matrix.job.target }}
       - name: Packaging final binary
         shell: bash
         run: |
@@ -76,7 +58,7 @@ jobs:
           cd target/"${{ matrix.job.target }}"/release
 
           ####### reduce binary size by removing debug symbols #######
-          BINARY_NAME="hc-runner${{ matrix.job.binary-postfix }}"
+          BINARY_NAME=hc-runner${{ matrix.job.os-name == 'windows' && '.exe' || '' }}
           if [[ "${{ matrix.job.target }}" == aarch64-unknown-linux-gnu ]]; then
             GCC_PREFIX="aarch64-linux-gnu-"
           else
