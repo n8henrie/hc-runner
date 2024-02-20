@@ -21,3 +21,6 @@ url = { version = "2", features = ["serde"] }
 
 [dev-dependencies]
 httpmock = "0.7"
+
+[target.aarch64-unknown-linux-gnu.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
