@@ -77,7 +77,7 @@ jobs:
             shasum -a 256 $RELEASE_NAME.tar.gz > $RELEASE_NAME.sha256
           fi
       - name: Debug missing assets
-        run:
+        run: |
           set -x
           ls -lA target
           ls -lA target/"${{ matrix.job.target }}"
