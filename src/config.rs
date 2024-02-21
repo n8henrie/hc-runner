@@ -1,4 +1,7 @@
-use std::io::{self, Write};
+use std::{
+    io::{self, Write},
+    path::PathBuf,
+};
 
 use crate::{Error, Result};
 use clap::builder::NonEmptyStringValueParser;
@@ -17,6 +20,10 @@ use serde::Deserialize;
 struct Cli {
     #[arg(trailing_var_arg(true), required(true), value_parser=NonEmptyStringValueParser::new())]
     pub(crate) command: Vec<String>,
+
+    /// Specify a config file in non-default location
+    #[arg(short, long)]
+    pub(crate) config: Option<PathBuf>,
 
     /// Silence logging / warnings. Does not affect called command's output.
     #[arg(short, long, conflicts_with("verbose"))]
@@ -79,22 +86,25 @@ impl Config {
         let cli = Cli::try_parse()?;
 
         let mut builder = config_rs::Config::builder();
-        if let Some(pd) = ProjectDirs::from("com", "n8henrie", "hc-runner") {
-            if let Some(conf_file) =
-                pd.config_dir().join("config.toml").to_str()
-            {
-                // tracing not configured until after this method returns, so
-                // this is a non-pretty workaround to help users find where the
-                // config file should be placed
-                if cli.verbose >= 2 {
-                    writeln!(
-                        io::stdout(),
-                        "searching for config file at {conf_file}"
-                    )?;
-                };
-                builder = builder
-                    .add_source(File::with_name(conf_file).required(false));
-            }
+
+        let conf_file = cli.config.or_else(|| {
+            ProjectDirs::from("com", "n8henrie", "hc-runner")
+                .map(|pd| pd.config_dir().join("config.toml"))
+        });
+
+        if let Some(conf_file) = conf_file {
+            // tracing not configured until after this method returns, so
+            // this is a non-pretty workaround to help users find where the
+            // config file should be placed
+            if cli.verbose >= 2 {
+                writeln!(
+                    io::stdout(),
+                    "searching for config file at {}",
+                    conf_file.display(),
+                )?;
+            };
+            builder =
+                builder.add_source(File::from(conf_file).required(false));
         };
         let settings: Settings = builder
             .add_source(Environment::with_prefix("HC_RUNNER"))
@@ -194,5 +204,18 @@ mod tests {
             base.iter().chain(["-q", "-v", "fake_command"].iter())
         )
         .is_err());
+    }
+
+    #[test]
+    fn test_specify_config_file() {
+        let cli = Cli::parse_from(["", "--slug=test", "fake_command"]);
+        assert_eq!(cli.config, None);
+        let cli = Cli::parse_from([
+            "",
+            "--slug=test",
+            "--config=/dev/null",
+            "fake_command",
+        ]);
+        assert_eq!(cli.config, Some("/dev/null".into()));
     }
 }

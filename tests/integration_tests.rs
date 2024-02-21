@@ -2,7 +2,7 @@ use std::{env, fs, process, str};
 
 use httpmock::prelude::*;
 use httpmock::{Method::HEAD, Mock};
-use tempfile::tempdir;
+use tempfile::{tempdir, Builder};
 
 const EXE: &str = env!("CARGO_BIN_EXE_hc-runner");
 
@@ -288,6 +288,46 @@ fn env_overrides_file() {
     // Confirm settings the envvar overrides the bad config
     env::set_var("HC_RUNNER_URL", url);
     let status = cmd.output().unwrap().status;
+    mock_start.assert_hits(1);
+    mock_end.assert_hits(1);
+    assert!(status.success());
+}
+
+#[test]
+fn specify_config_file() {
+    let server = setup_server(false);
+    let (mock_start, mock_end) = successful_run(&server, "winner");
+
+    // `HC_RUNNER_URL` is set in the `setup_server` function; this is just a
+    // lazy way to get the URL for the mock server before we change it.
+    let url = env::var("HC_RUNNER_URL").unwrap();
+    env::remove_var("HC_RUNNER_URL");
+
+    // Confirm failure with the env_var unset
+    let status = process::Command::new(EXE)
+        .args(["--slug=winner", "echo", "hooray!"])
+        .output()
+        .unwrap()
+        .status;
+    mock_start.assert_hits(0);
+    mock_end.assert_hits(0);
+    assert!(!status.success());
+
+    // Write config (with the server url) to a file and specify that as config
+    let config = Builder::new().suffix(".toml").tempfile().unwrap();
+    fs::write(config.path(), format!(r#"url = "{url}""#)).unwrap();
+
+    let status = process::Command::new(EXE)
+        .args([
+            "--config",
+            config.path().to_str().unwrap(),
+            "--slug=winner",
+            "echo",
+            "hooray!",
+        ])
+        .output()
+        .unwrap()
+        .status;
     mock_start.assert_hits(1);
     mock_end.assert_hits(1);
     assert!(status.success());
