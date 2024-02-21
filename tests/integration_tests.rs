@@ -16,7 +16,7 @@ fn setup_server(ignore: bool) -> httpmock::MockServer {
         });
     }
 
-    env::set_var("HC_RUNNER_URL", dbg!(server.url("")));
+    env::set_var("HC_RUNNER_URL", server.url(""));
     server
 }
 
@@ -178,7 +178,6 @@ fn temp_config(contents: impl AsRef<str>) -> tempfile::TempDir {
     };
 
     let path = home.path().to_path_buf().join(suffix);
-    dbg!(&path);
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::write(path, contents.as_ref()).unwrap();
     home
