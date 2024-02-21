@@ -54,7 +54,6 @@ jobs:
       - name: Packaging final binary
         shell: bash
         run: |
-          set -x
           cd target/"${{ matrix.job.target }}"/release
 
           ####### reduce binary size by removing debug symbols #######
@@ -76,13 +75,6 @@ jobs:
           else
             shasum -a 256 $RELEASE_NAME.tar.gz > $RELEASE_NAME.sha256
           fi
-      - name: Debug missing assets
-        run: |
-          set -x
-          ls -lA target
-          ls -lA target/"${{ matrix.job.target }}"
-          ls -lA target/"${{ matrix.job.target }}"/release
-          ls -lA target/"${{ matrix.job.target }}"/release/hc-runner-*.tar.gz
       - name: Releasing assets
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
