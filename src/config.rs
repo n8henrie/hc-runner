@@ -16,7 +16,7 @@ use config_rs::{Environment, File};
 use serde::Deserialize;
 
 #[derive(Debug, Parser)]
-#[command(author, version, about, about, long_about)]
+#[command(author, version, about, long_about)]
 struct Cli {
     #[arg(trailing_var_arg(true), required(true), value_parser=NonEmptyStringValueParser::new())]
     pub(crate) command: Vec<String>,
