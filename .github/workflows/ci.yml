@@ -6,6 +6,14 @@ on:
   pull_request:
 
 jobs:
+  nix:
+    name: build in nix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v11
+      - name: build
+    run: nix build
 
   test:
     name: Test Suite
