@@ -1,3 +1,4 @@
+use std::sync::{LazyLock, Mutex};
 use std::{env, fs, process, str};
 
 use httpmock::prelude::*;
@@ -5,6 +6,8 @@ use httpmock::{Method::HEAD, Mock};
 use tempfile::{tempdir, Builder};
 
 const EXE: &str = env!("CARGO_BIN_EXE_hc-runner");
+
+static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Default::default());
 
 fn setup_server(ignore: bool) -> httpmock::MockServer {
     let server: httpmock::MockServer = httpmock::MockServer::start();
@@ -16,15 +19,27 @@ fn setup_server(ignore: bool) -> httpmock::MockServer {
         });
     }
 
-    env::set_var("HC_RUNNER_URL", server.url(""));
+    // Prevent reading config from my actual filesystem.
+    // Unsetting `HOME` doesn't work due to this `fallback`:
+    // https://github.com/dirs-dev/dirs-sys-rs/blob/8bcd4aa2c35990d57a2cff2953793525fc42709c/src/lib.rs#L44
+    env::set_var("HOME", "/dev/null");
+
     server
 }
 
 #[test]
 fn catches_stdout() {
-    setup_server(true);
+    let server = setup_server(true);
     let result = process::Command::new(EXE)
-        .args(["--slug=_", "--", "echo", "-n", "foo"])
+        .args([
+            "--slug=_",
+            "--url",
+            &server.url(""),
+            "--",
+            "echo",
+            "-n",
+            "foo",
+        ])
         .output()
         .unwrap();
     assert_eq!(str::from_utf8(&result.stdout).unwrap(), "foo");
@@ -33,9 +48,9 @@ fn catches_stdout() {
 
 #[test]
 fn catches_stderr() {
-    setup_server(true);
+    let server = setup_server(true);
     let result = process::Command::new(EXE)
-        .args(["--slug=_", "grep", "foo", "bar"])
+        .args(["--slug=_", "--url", &server.url(""), "grep", "foo", "bar"])
         .output()
         .unwrap();
 
@@ -71,10 +86,12 @@ fn successful_run<'a>(
 
 #[test]
 fn catches_stdout_and_stderr() {
-    setup_server(true);
+    let server = setup_server(true);
     let result = process::Command::new(EXE)
         .args([
             "--slug=_",
+            "--url",
+            &server.url(""),
             "bash",
             "-c",
             "echo foo > /dev/stdout; echo bar > /dev/stderr",
@@ -97,9 +114,9 @@ fn catches_stdout_and_stderr() {
 
 #[test]
 fn propagates_success() {
-    setup_server(true);
+    let server = setup_server(true);
     let status = process::Command::new(EXE)
-        .args(["--slug=_", "true"])
+        .args(["--slug=_", "--url", &server.url(""), "true"])
         .output()
         .unwrap()
         .status;
@@ -108,9 +125,9 @@ fn propagates_success() {
 
 #[test]
 fn propagates_error() {
-    setup_server(true);
+    let server = setup_server(true);
     let status = process::Command::new(EXE)
-        .args(["--slug=_", "false"])
+        .args(["--slug=_", "--url", &server.url(""), "false"])
         .output()
         .unwrap()
         .status;
@@ -123,7 +140,7 @@ fn calls_server_success() {
     let (mock_start, mock_end) = successful_run(&server, "winner");
 
     let status = process::Command::new(EXE)
-        .args(["--slug=winner", "echo", "hooray!"])
+        .args(["--slug=winner", "--url", &server.url(""), "echo", "hooray!"])
         .output()
         .unwrap()
         .status;
@@ -151,6 +168,8 @@ fn calls_server_error() {
     let status = process::Command::new(EXE)
         .args([
             "--slug=failer",
+            "--url",
+            &server.url(""),
             "bash",
             "-c",
             "echo whups > /dev/stderr; exit 7",
@@ -191,9 +210,7 @@ fn file_config_works() {
     let mut cmd = process::Command::new(EXE);
     let cmd = cmd.args(["--slug=winner", "echo", "hooray!"]);
 
-    // `HC_RUNNER_URL` is set in the `setup_server` function; this is just a
-    // lazy way to get the URL for the mock server before we change it.
-    let url = env::var("HC_RUNNER_URL").unwrap();
+    let env_guard = ENV_LOCK.lock().unwrap();
     env::remove_var("HC_RUNNER_URL");
 
     // Confirm failure with the env_var unset
@@ -203,8 +220,10 @@ fn file_config_works() {
     assert!(!status.success());
 
     // Should work again obtaining the URL from the config file
-    let _tmp = temp_config(format!(r#"url = "{url}""#));
+    let _tmp = temp_config(format!(r#"url = "{}""#, server.url("")));
     let status = cmd.output().unwrap().status;
+    drop(env_guard);
+
     mock_start.assert_hits(1);
     mock_end.assert_hits(1);
     assert!(status.success());
@@ -217,17 +236,20 @@ fn env_works() {
 
     let mut cmd = process::Command::new(EXE);
     let cmd = cmd.args(["--slug=winner", "echo", "hooray!"]);
-    // `HC_RUNNER_URL` is set in the `setup_server` function; this is just a
-    // lazy way to get the URL for the mock server before we change it.
-    let url = env::var("HC_RUNNER_URL").unwrap();
+
+    let env_guard = ENV_LOCK.lock().unwrap();
+
+    // Ensure this is not set, verify failure in absence
     env::remove_var("HC_RUNNER_URL");
     let status = cmd.output().unwrap().status;
     mock_start.assert_hits(0);
     mock_end.assert_hits(0);
     assert!(!status.success());
 
-    env::set_var("HC_RUNNER_URL", url);
+    env::set_var("HC_RUNNER_URL", server.url(""));
     let status = cmd.output().unwrap().status;
+    drop(env_guard);
+
     mock_start.assert_hits(1);
     mock_end.assert_hits(1);
     assert!(status.success());
@@ -248,7 +270,7 @@ fn flag_overrides_env() {
             .status
     };
 
-    let url = env::var("HC_RUNNER_URL").unwrap();
+    let env_guard = ENV_LOCK.lock().unwrap();
     env::set_var("HC_RUNNER_URL", "http://broken");
 
     let status = cmd(args.clone());
@@ -256,9 +278,11 @@ fn flag_overrides_env() {
     mock_end.assert_hits(0);
     assert!(!status.success());
 
-    let url_flag = format!("--url={url}");
+    let url_flag = format!("--url={}", &server.url(""));
     args.insert(0, url_flag.as_ref());
     let status = cmd(args);
+    drop(env_guard);
+
     mock_start.assert_hits(1);
     mock_end.assert_hits(1);
     assert!(status.success());
@@ -272,12 +296,10 @@ fn env_overrides_file() {
     let mut cmd = process::Command::new(EXE);
     let cmd = cmd.args(["--slug=winner", "echo", "hooray!"]);
 
-    // `HC_RUNNER_URL` is set in the `setup_server` function; this is just a
-    // lazy way to get the URL for the mock server before we change it.
-    let url = env::var("HC_RUNNER_URL").unwrap();
+    let env_guard = ENV_LOCK.lock().unwrap();
     env::remove_var("HC_RUNNER_URL");
 
-    // Set a broken url by in the config file, failure shows it was used
+    // Set a broken url in the config file, failure shows it was used
     let _tmp = temp_config(r#"url = "http://broken""#);
     let status = cmd.output().unwrap().status;
     mock_start.assert_hits(0);
@@ -285,8 +307,10 @@ fn env_overrides_file() {
     assert!(!status.success());
 
     // Confirm settings the envvar overrides the bad config
-    env::set_var("HC_RUNNER_URL", url);
+    env::set_var("HC_RUNNER_URL", server.url(""));
     let status = cmd.output().unwrap().status;
+    drop(env_guard);
+
     mock_start.assert_hits(1);
     mock_end.assert_hits(1);
     assert!(status.success());
@@ -297,9 +321,7 @@ fn specify_config_file() {
     let server = setup_server(false);
     let (mock_start, mock_end) = successful_run(&server, "winner");
 
-    // `HC_RUNNER_URL` is set in the `setup_server` function; this is just a
-    // lazy way to get the URL for the mock server before we change it.
-    let url = env::var("HC_RUNNER_URL").unwrap();
+    let env_guard = ENV_LOCK.lock().unwrap();
     env::remove_var("HC_RUNNER_URL");
 
     // Confirm failure with the env_var unset
@@ -314,7 +336,8 @@ fn specify_config_file() {
 
     // Write config (with the server url) to a file and specify that as config
     let config = Builder::new().suffix(".toml").tempfile().unwrap();
-    fs::write(config.path(), format!(r#"url = "{url}""#)).unwrap();
+    fs::write(config.path(), format!(r#"url = "{}""#, server.url("")))
+        .unwrap();
 
     let status = process::Command::new(EXE)
         .args([
@@ -327,6 +350,7 @@ fn specify_config_file() {
         .output()
         .unwrap()
         .status;
+    drop(env_guard);
     mock_start.assert_hits(1);
     mock_end.assert_hits(1);
     assert!(status.success());
