@@ -98,7 +98,7 @@ impl Config {
             // config file should be placed
             if cli.verbose >= 2 {
                 writeln!(
-                    io::stdout(),
+                    io::stderr(),
                     "searching for config file at {}",
                     conf_file.display(),
                 )?;
