@@ -12,7 +12,7 @@ install-macos: install
 			trap "launchctl bootout gui/$${UID}/com.n8henrie.$(PROJECT)_tmp" EXIT; \
 			launchctl submit -l com.n8henrie.$(PROJECT)_tmp -o "$${TMPDIR}"/out.txt -e "$${TMPDIR}"/err.txt \
 				-- ~/.cargo/bin/$(PROJECT) \
-				--slug runner-rs-setup-delete-me \
+				--slug hc-runner-setup-delete-me \
 				--url http://fake \
 				-- \
 				ls ~/Desktop ~/Downloads ~/Documents; \

@@ -1,6 +1,6 @@
-# runner
+# hc-runner
 
-master: [![master branch build status](https://github.com/n8henrie/runner-rs/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/n8henrie/runner-rs/actions/workflows/ci.yml)
+master: [![master branch build status](https://github.com/n8henrie/hc-runner/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/n8henrie/hc-runner/actions/workflows/ci.yml)
 
 A personal project that runs commands and submits the execution result to a
 configurable instance of [healthchecks.io] (>=v3, requires auto-provisioning).
@@ -66,8 +66,8 @@ Options:
 Example:
 
 ```console
-$ git clone https://github.com/n8henrie/runner-rs.git
-$ cd runner-rs
+$ git clone https://github.com/n8henrie/hc-runner.git
+$ cd hc-runner
 $ export HC_RUNNER_URL=http://your.server.url
 $ cargo build --release
 $ ./target/release/runner --slug say_foo -- echo foo
@@ -115,7 +115,7 @@ then present some permissions dialogs to allow you to give access to these
 directories to `runner`. If the scripts you are running do *not* access
 sensitive directories such as `~/Desktop`, `~/Documents`, `~/Downloads`, don't
 bother with this. If you *do* use this approach, you'll have to remove a check
-named `runner-rs-setup-delete-me` from your [healthchecks.io] instance.
+named `hc-runner-setup-delete-me` from your [healthchecks.io] instance.
 
 ### Alternatives
 
