@@ -8,12 +8,12 @@ repository = "https://github.com/n8henrie/hc-runner"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-config = { version = "0.14", default-features = false, features = ["toml"] }
-directories = "5"
-reqwest = "0.11"
+config = { version = "0.15", default-features = false, features = ["toml"] }
+directories = "6"
+reqwest = "0.12"
 serde = { version = "1", features = ["derive"] }
 tempfile = "3"
-thiserror = "1"
+thiserror = "2"
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
