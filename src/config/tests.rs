@@ -5,7 +5,7 @@ use tempfile::tempdir;
 
 use super::*;
 
-static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Default::default());
+static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(Mutex::default);
 
 /// Returns the `TempDir` to prevent destruction at the end of the function
 fn temp_config(contents: impl AsRef<str>) -> tempfile::TempDir {
@@ -121,7 +121,7 @@ fn test_timeout_overrides() {
     assert_eq!(config.timeout, 10);
 
     // test override with file config
-    let _tmp = temp_config(format!(r#"timeout = "20""#));
+    let _tmp = temp_config(r#"timeout = "20""#);
     let config = Config::resolve_with(cli.clone()).unwrap();
     assert_eq!(config.timeout, 20);
 

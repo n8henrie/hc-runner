@@ -7,7 +7,7 @@ use tempfile::{tempdir, Builder};
 
 const EXE: &str = env!("CARGO_BIN_EXE_hc-runner");
 
-static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Default::default());
+static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(Mutex::default);
 
 fn setup_server(ignore: bool) -> httpmock::MockServer {
     let server: httpmock::MockServer = httpmock::MockServer::start();

@@ -120,8 +120,7 @@ impl Config {
             .or(settings.url)
             .ok_or_else(|| Error::Config("Base URL not found".into()))?;
 
-        let timeout: u64 =
-            cli.timeout.or(settings.timeout).unwrap_or_else(|| 10);
+        let timeout: u64 = cli.timeout.or(settings.timeout).unwrap_or(10);
 
         let verbosity =
             parse_verbosity(if cli.quiet { 0 } else { cli.verbose });
