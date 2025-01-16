@@ -30,17 +30,18 @@ Arguments:
   <COMMAND>...
 
 Options:
+  -c, --config <CONFIG>    Specify a config file in non-default location
   -q, --quiet              Silence logging / warnings. Does not affect called command's output
   -s, --slug <NAME>        Set healthchecks slug for this call
       --success-only       Disable calling `/start` and only ping healthchecks if the test was successful
-  -t, --timeout <TIMEOUT>  Set timeout for requests to healthchecks server [default: 10]
+  -t, --timeout <TIMEOUT>  Set timeout for requests to healthchecks server
   -u, --url <URL>          Specify the URL of the healthchecks server for this call
   -v, --verbose...         Increase logging verbosity. May be repeated. Defaults to `Level::WARN`
   -h, --help               Print help
   -V, --version            Print version
 ```
 
-`runner`:
+`hc-runner`:
 
 - by default sends a request to `/start` to mark the beginning of the scripts
   execution and uses `?create=1` here to create a new healthcheck for this slug
