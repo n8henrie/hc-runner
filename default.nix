@@ -1,7 +1,7 @@
 {
   lib,
   stdenv,
-  darwin,
+  apple-sdk_12,
   perl,
   rustPlatform,
   openssl,
@@ -14,6 +14,6 @@ rustPlatform.buildRustPackage {
   nativeBuildInputs = [ pkg-config ] ++ (lib.optionals (stdenv.isLinux && stdenv.isAarch64) [ perl ]);
   buildInputs = [
     openssl
-  ] ++ lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.SystemConfiguration ];
+  ] ++ lib.optionals stdenv.isDarwin [ apple-sdk_12 ];
   doCheck = stdenv.isLinux;
 }
