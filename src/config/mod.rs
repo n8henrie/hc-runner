@@ -106,10 +106,10 @@ impl Config {
                     "searching for config file at {}",
                     conf_file.display(),
                 )?;
-            };
+            }
             builder =
                 builder.add_source(File::from(conf_file).required(false));
-        };
+        }
         let settings: Settings = builder
             .add_source(Environment::with_prefix("HC_RUNNER"))
             .build()?

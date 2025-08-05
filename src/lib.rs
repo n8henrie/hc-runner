@@ -75,7 +75,7 @@ fn add_slug(mut url: Url, slug: String) -> Result<Url> {
     let path = url.path();
     if !path.ends_with('/') {
         url.set_path(&(path.to_string() + "/"));
-    };
+    }
 
     let with_slug = url.join(&(slug + "/"))?;
     Ok(with_slug)
@@ -135,7 +135,7 @@ pub async fn run(config: Config) -> Result<u8> {
 
     if let Some(req) = start_req {
         let _ = req.await?;
-    };
+    }
 
     match (config.success_only, exit_code) {
         (false, _) | (true, 0) => {
@@ -148,7 +148,7 @@ pub async fn run(config: Config) -> Result<u8> {
             if !res.status().is_success() {
                 let text = res.text().await?;
                 writeln!(io::stderr(), "failed to update status: {text}")?;
-            };
+            }
         }
         _ => (),
     }
