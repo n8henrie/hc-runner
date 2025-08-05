@@ -16,4 +16,11 @@ rustPlatform.buildRustPackage {
     openssl
   ] ++ lib.optionals stdenv.isDarwin [ apple-sdk_12 ];
   doCheck = stdenv.isLinux;
+  meta = with lib; {
+    mainProgram = "hc-runner";
+    homepage = "https://github.com/n8henrie/hc-runner";
+    license = licenses.mit;
+    maintainers = [ maintainers.n8henrie ];
+    platforms = with platforms; linux ++ darwin;
+  };
 }
