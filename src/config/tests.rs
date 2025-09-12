@@ -143,3 +143,19 @@ fn test_timeout_overrides() {
 
     drop(env_guard);
 }
+
+#[test]
+fn test_default_config() {
+    let env_guard = ENV_LOCK.lock().unwrap();
+    // test defaults
+    let cli = Cli::parse_from([
+        "",
+        "--url=https://n8henrie.com",
+        "--slug=test",
+        "fake_command",
+    ]);
+    let config = Config::resolve_with(cli.clone()).unwrap();
+    assert_eq!(config.verbosity, Level::WARN);
+
+    drop(env_guard);
+}

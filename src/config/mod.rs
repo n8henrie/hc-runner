@@ -62,7 +62,7 @@ struct Settings {
 }
 
 fn parse_verbosity(n: u8) -> Level {
-    match n {
+    match n.saturating_add(1) {
         0 => Level::ERROR,
         1 => Level::WARN,
         2 => Level::INFO,
