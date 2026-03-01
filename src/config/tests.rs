@@ -10,8 +10,10 @@ static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(Mutex::default);
 /// Returns the `TempDir` to prevent destruction at the end of the function
 fn temp_config(contents: impl AsRef<str>) -> tempfile::TempDir {
     let home = tempdir().unwrap();
-    env::set_var("HOME", home.path());
-    env::remove_var("XDG_CONFIG_HOME");
+    unsafe {
+        env::set_var("HOME", home.path());
+        env::remove_var("XDG_CONFIG_HOME");
+    }
 
     let suffix = if cfg!(target_os = "macos") {
         "Library/Application Support/com.n8henrie.hc-runner/config.toml"
@@ -46,7 +48,7 @@ fn test_config_parser() {
         config.command,
         vec!["echo", "-vvv", "foo", "bar", "foo bar"]
     );
-    for config in vec![
+    for config in [
         Cli::parse_from(["", "--slug=fake", "cat"]),
         Cli::parse_from(["", "--slug", "fake", "--", "cat"]),
         Cli::parse_from(["", "-s", "fake", "cat"]),
