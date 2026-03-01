@@ -1,7 +1,7 @@
 {
   description = "github.com/n8henrie/hc-runner";
 
-  inputs.nixpkgs.url = "github:nixos/nixpkgs";
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
 
   outputs =
     { self, nixpkgs }:
@@ -14,13 +14,12 @@
       eachSystem =
         with nixpkgs.lib;
         f: foldAttrs mergeAttrs { } (map (s: mapAttrs (_: v: { ${s} = v; }) (f s)) systems);
-      inherit ((builtins.fromTOML (builtins.readFile ./Cargo.toml)).package) name;
+      inherit ((fromTOML (builtins.readFile ./Cargo.toml)).package) name;
     in
     {
       overlays = {
         default = self.overlays.${name};
         ${name} = _: prev: {
-          # inherit doesn't work with dynamic attributes
           ${name} = self.packages.${prev.system}.${name};
         };
       };
@@ -34,7 +33,7 @@
 
         packages = {
           default = self.packages.${system}.${name};
-          ${name} = pkgs.callPackage ./. { };
+          ${name} = pkgs.callPackage ./package.nix { };
         };
 
         apps.default = {
