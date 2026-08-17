@@ -20,6 +20,7 @@ rustPlatform.buildRustPackage {
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk ];
   doCheck = stdenv.hostPlatform.isLinux;
+  dontUseCargoParallelTests = true;
   meta = with lib; {
     mainProgram = "hc-runner";
     homepage = "https://github.com/n8henrie/hc-runner";
