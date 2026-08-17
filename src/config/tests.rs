@@ -115,8 +115,10 @@ fn test_specify_config_file() {
 fn test_timeout_overrides() {
     let env_guard = ENV_LOCK.lock().unwrap();
     // remove confounding environment
-    env::remove_var("HC_RUNNER_TIMEOUT");
-    env::set_var("HOME", "/dev/null");
+    unsafe {
+        env::remove_var("HC_RUNNER_TIMEOUT");
+        env::set_var("HOME", "/dev/null");
+    }
 
     // test defaults
     let cli = Cli::parse_from([
@@ -134,7 +136,9 @@ fn test_timeout_overrides() {
     assert_eq!(config.timeout, 20);
 
     // test override with env
-    env::set_var("HC_RUNNER_TIMEOUT", "30");
+    unsafe {
+        env::set_var("HC_RUNNER_TIMEOUT", "30");
+    }
     let config = Config::resolve_with(cli).unwrap();
     assert_eq!(config.timeout, 30);
 

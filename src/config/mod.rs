@@ -83,6 +83,8 @@ pub struct Config {
 
 impl Config {
     #[tracing::instrument]
+    /// # Errors
+    /// Returns an error if CLI arguments can't be parsed
     pub fn resolve() -> Result<Self> {
         let cli = Cli::try_parse()?;
         Self::resolve_with(cli)

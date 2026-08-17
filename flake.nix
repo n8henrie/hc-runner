@@ -45,7 +45,9 @@
           inputsFrom = [ self.outputs.packages.${system}.${name} ];
           buildInputs = with pkgs; [
             bacon
+            clippy
             rust-analyzer
+            rustfmt
           ];
         };
       }

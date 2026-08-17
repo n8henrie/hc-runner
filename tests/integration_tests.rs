@@ -22,7 +22,9 @@ fn setup_server(ignore: bool) -> httpmock::MockServer {
     // Prevent reading config from my actual filesystem.
     // Unsetting `HOME` doesn't work due to this `fallback`:
     // https://github.com/dirs-dev/dirs-sys-rs/blob/8bcd4aa2c35990d57a2cff2953793525fc42709c/src/lib.rs#L44
-    env::set_var("HOME", "/dev/null");
+    unsafe {
+        env::set_var("HOME", "/dev/null");
+    };
 
     server
 }
@@ -72,15 +74,13 @@ fn successful_run<'a>(
 ) -> (Mock<'a>, Mock<'a>) {
     let mock_start = server.mock(|when, then| {
         when.method(HEAD)
-            .path_matches(
-                Regex::new(format!("/{slug}/start$").as_ref()).unwrap(),
-            )
+            .path_matches(Regex::from(format!("/{slug}/start$").as_ref()))
             .query_param("create", "1");
         then.status(200);
     });
     let mock_end = server.mock(|when, then| {
         when.method(POST)
-            .path_matches(Regex::new(format!("/{slug}/0$").as_ref()).unwrap());
+            .path_matches(Regex::from(format!("/{slug}/0$").as_ref()));
         then.status(200);
     });
     (mock_start, mock_end)
@@ -157,13 +157,12 @@ fn calls_server_error() {
 
     let mock_start = server.mock(|when, then| {
         when.method(HEAD)
-            .path_matches(Regex::new("/failer/start$").unwrap())
+            .path_matches(Regex::from("/failer/start$"))
             .query_param("create", "1");
         then.status(200);
     });
     let mock_end = server.mock(|when, then| {
-        when.method(POST)
-            .path_matches(Regex::new("/failer/7$").unwrap());
+        when.method(POST).path_matches(Regex::from("/failer/7$"));
         then.status(200);
     });
 
@@ -187,9 +186,12 @@ fn calls_server_error() {
 /// Returns the `TempDir` to prevent destruction at the end of the function
 fn temp_config(contents: impl AsRef<str>) -> tempfile::TempDir {
     let home = tempdir().unwrap();
-    env::set_var("HOME", home.path());
-    env::remove_var("XDG_CONFIG_HOME");
-
+    unsafe {
+        env::set_var("HOME", home.path());
+    }
+    unsafe {
+        env::remove_var("XDG_CONFIG_HOME");
+    }
     let suffix = if cfg!(target_os = "macos") {
         "Library/Application Support/com.n8henrie.hc-runner/config.toml"
     } else if cfg!(target_os = "linux") {
@@ -215,12 +217,12 @@ fn file_config_works() {
     let cmd = cmd.args(["--slug=winner", "echo", "hooray!"]);
 
     let env_guard = ENV_LOCK.lock().unwrap();
-    env::remove_var("HC_RUNNER_URL");
-
-    // Confirm failure with the env_var unset
+    unsafe {
+        env::remove_var("HC_RUNNER_URL");
+    }
     let status = cmd.output().unwrap().status;
-    mock_start.assert_hits(0);
-    mock_end.assert_hits(0);
+    mock_start.assert_calls(0);
+    mock_end.assert_calls(0);
     assert!(!status.success());
 
     // Should work again obtaining the URL from the config file
@@ -228,8 +230,8 @@ fn file_config_works() {
     let status = cmd.output().unwrap().status;
     drop(env_guard);
 
-    mock_start.assert_hits(1);
-    mock_end.assert_hits(1);
+    mock_start.assert_calls(1);
+    mock_end.assert_calls(1);
     assert!(status.success());
 }
 
@@ -244,18 +246,22 @@ fn env_works() {
     let env_guard = ENV_LOCK.lock().unwrap();
 
     // Ensure this is not set, verify failure in absence
-    env::remove_var("HC_RUNNER_URL");
+    unsafe {
+        env::remove_var("HC_RUNNER_URL");
+    }
     let status = cmd.output().unwrap().status;
-    mock_start.assert_hits(0);
-    mock_end.assert_hits(0);
+    mock_start.assert_calls(0);
+    mock_end.assert_calls(0);
     assert!(!status.success());
 
-    env::set_var("HC_RUNNER_URL", server.url(""));
+    unsafe {
+        env::set_var("HC_RUNNER_URL", server.url(""));
+    }
     let status = cmd.output().unwrap().status;
     drop(env_guard);
 
-    mock_start.assert_hits(1);
-    mock_end.assert_hits(1);
+    mock_start.assert_calls(1);
+    mock_end.assert_calls(1);
     assert!(status.success());
 }
 
@@ -275,20 +281,21 @@ fn flag_overrides_env() {
     };
 
     let env_guard = ENV_LOCK.lock().unwrap();
-    env::set_var("HC_RUNNER_URL", "http://broken");
-
+    unsafe {
+        env::set_var("HC_RUNNER_URL", "http://broken");
+    }
     let status = cmd(args.clone());
-    mock_start.assert_hits(0);
-    mock_end.assert_hits(0);
+    mock_start.assert_calls(0);
+    mock_end.assert_calls(0);
     assert!(!status.success());
 
-    let url_flag = format!("--url={}", &server.url(""));
+    let url_flag = format!("--url={}", server.url(""));
     args.insert(0, url_flag.as_ref());
     let status = cmd(args);
     drop(env_guard);
 
-    mock_start.assert_hits(1);
-    mock_end.assert_hits(1);
+    mock_start.assert_calls(1);
+    mock_end.assert_calls(1);
     assert!(status.success());
 }
 
@@ -301,22 +308,25 @@ fn env_overrides_file() {
     let cmd = cmd.args(["--slug=winner", "echo", "hooray!"]);
 
     let env_guard = ENV_LOCK.lock().unwrap();
-    env::remove_var("HC_RUNNER_URL");
-
+    unsafe {
+        env::remove_var("HC_RUNNER_URL");
+    }
     // Set a broken url in the config file, failure shows it was used
     let _tmp = temp_config(r#"url = "http://broken""#);
     let status = cmd.output().unwrap().status;
-    mock_start.assert_hits(0);
-    mock_end.assert_hits(0);
+    mock_start.assert_calls(0);
+    mock_end.assert_calls(0);
     assert!(!status.success());
 
     // Confirm settings the envvar overrides the bad config
-    env::set_var("HC_RUNNER_URL", server.url(""));
+    unsafe {
+        env::set_var("HC_RUNNER_URL", server.url(""));
+    }
     let status = cmd.output().unwrap().status;
     drop(env_guard);
 
-    mock_start.assert_hits(1);
-    mock_end.assert_hits(1);
+    mock_start.assert_calls(1);
+    mock_end.assert_calls(1);
     assert!(status.success());
 }
 
@@ -326,16 +336,16 @@ fn specify_config_file() {
     let (mock_start, mock_end) = successful_run(&server, "winner");
 
     let env_guard = ENV_LOCK.lock().unwrap();
-    env::remove_var("HC_RUNNER_URL");
-
-    // Confirm failure with the env_var unset
+    unsafe {
+        env::remove_var("HC_RUNNER_URL");
+    }
     let status = process::Command::new(EXE)
         .args(["--slug=winner", "echo", "hooray!"])
         .output()
         .unwrap()
         .status;
-    mock_start.assert_hits(0);
-    mock_end.assert_hits(0);
+    mock_start.assert_calls(0);
+    mock_end.assert_calls(0);
     assert!(!status.success());
 
     // Write config (with the server url) to a file and specify that as config
@@ -355,7 +365,7 @@ fn specify_config_file() {
         .unwrap()
         .status;
     drop(env_guard);
-    mock_start.assert_hits(1);
-    mock_end.assert_hits(1);
+    mock_start.assert_calls(1);
+    mock_end.assert_calls(1);
     assert!(status.success());
 }
