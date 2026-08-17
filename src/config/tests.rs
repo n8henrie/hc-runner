@@ -20,7 +20,9 @@ fn temp_config(contents: impl AsRef<str>) -> tempfile::TempDir {
     } else if cfg!(target_os = "linux") {
         ".config/hc-runner/config.toml"
     } else {
-        panic!("Testing not (yet) supported on your platform. Contributions appreciated!");
+        panic!(
+            "Testing not (yet) supported on your platform. Contributions appreciated!"
+        );
     };
 
     let path = home.path().to_path_buf().join(suffix);
@@ -66,30 +68,34 @@ fn test_command_required() {
 
 #[test]
 fn test_command_required_with_dashes() {
-    assert!(Cli::try_parse_from([
-        "",
-        "--slug",
-        "no command after the dashes",
-        "--",
-    ])
-    .is_err());
+    assert!(
+        Cli::try_parse_from([
+            "",
+            "--slug",
+            "no command after the dashes",
+            "--",
+        ])
+        .is_err()
+    );
 }
 
 #[test]
 fn test_verbose_conflicts_with_quiet() {
     let base = ["", "--slug=test"];
-    assert!(Cli::try_parse_from(
-        base.iter().chain(["-v", "fake_command"].iter())
-    )
-    .is_ok());
-    assert!(Cli::try_parse_from(
-        base.iter().chain(["-q", "fake_command"].iter())
-    )
-    .is_ok());
-    assert!(Cli::try_parse_from(
-        base.iter().chain(["-q", "-v", "fake_command"].iter())
-    )
-    .is_err());
+    assert!(
+        Cli::try_parse_from(base.iter().chain(["-v", "fake_command"].iter()))
+            .is_ok()
+    );
+    assert!(
+        Cli::try_parse_from(base.iter().chain(["-q", "fake_command"].iter()))
+            .is_ok()
+    );
+    assert!(
+        Cli::try_parse_from(
+            base.iter().chain(["-q", "-v", "fake_command"].iter())
+        )
+        .is_err()
+    );
 }
 
 #[test]

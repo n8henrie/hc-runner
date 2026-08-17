@@ -5,7 +5,7 @@ use std::process::ExitCode;
 
 use tracing_subscriber::{self, EnvFilter};
 
-use hc_runner::{run, Config, Error, Result};
+use hc_runner::{Config, Error, Result, run};
 
 #[tokio::main]
 async fn main() -> Result<ExitCode> {

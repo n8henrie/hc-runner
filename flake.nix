@@ -38,12 +38,13 @@
 
         apps.default = {
           type = "app";
-          program = "${self.packages.${system}.${name}}/bin/${name}";
+          program = pkgs.lib.getExe self.packages.${system}.${name};
         };
 
         devShells.default = pkgs.mkShell {
+          inputsFrom = [ self.outputs.packages.${system}.${name} ];
           buildInputs = with pkgs; [
-            cargo
+            bacon
             rust-analyzer
           ];
         };

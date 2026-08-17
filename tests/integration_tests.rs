@@ -3,7 +3,7 @@ use std::{env, fs, process, str};
 
 use httpmock::prelude::*;
 use httpmock::{Method::HEAD, Mock};
-use tempfile::{tempdir, Builder};
+use tempfile::{Builder, tempdir};
 
 const EXE: &str = env!("CARGO_BIN_EXE_hc-runner");
 
@@ -55,12 +55,14 @@ fn catches_stderr() {
         .unwrap();
 
     let stderr = str::from_utf8(&result.stderr).unwrap();
-    assert!(stderr
-        .trim()
-        .lines()
-        .next()
-        .unwrap()
-        .ends_with("No such file or directory"));
+    assert!(
+        stderr
+            .trim()
+            .lines()
+            .next()
+            .unwrap()
+            .ends_with("No such file or directory")
+    );
     assert!(!result.status.success());
 }
 
@@ -193,7 +195,9 @@ fn temp_config(contents: impl AsRef<str>) -> tempfile::TempDir {
     } else if cfg!(target_os = "linux") {
         ".config/hc-runner/config.toml"
     } else {
-        panic!("Testing not (yet) supported on your platform. Contributions appreciated!");
+        panic!(
+            "Testing not (yet) supported on your platform. Contributions appreciated!"
+        );
     };
 
     let path = home.path().to_path_buf().join(suffix);

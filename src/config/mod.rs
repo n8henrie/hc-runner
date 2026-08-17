@@ -4,8 +4,8 @@ use std::{
 };
 
 use crate::{Error, Result};
-use clap::builder::NonEmptyStringValueParser;
 use clap::Parser;
+use clap::builder::NonEmptyStringValueParser;
 use reqwest::Url;
 use tracing::Level;
 
