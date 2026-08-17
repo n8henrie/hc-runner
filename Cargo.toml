@@ -5,6 +5,7 @@ edition = "2021"
 description = "Command runner for healthchecks.io"
 license = "MIT"
 repository = "https://github.com/n8henrie/hc-runner"
+authors = ["Nathan Henrie <nate@n8henrie.com>"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
