@@ -8,15 +8,18 @@
   pkg-config,
 }:
 rustPlatform.buildRustPackage {
-  inherit ((fromTOML (builtins.readFile ./Cargo.toml)).package) name version;
+  inherit ((lib.importTOML ./Cargo.toml).package) name version;
   src = lib.cleanSource ./.;
   cargoLock.lockFile = ./Cargo.lock;
-  nativeBuildInputs = [ pkg-config ] ++ (lib.optionals (stdenv.isLinux && stdenv.isAarch64) [ perl ]);
+  nativeBuildInputs = [
+    pkg-config
+  ]
+  ++ (lib.optionals (stdenv.hostPlatform.isLinux && stdenv.isAarch64) [ perl ]);
   buildInputs = [
     openssl
   ]
-  ++ lib.optionals stdenv.isDarwin [ apple-sdk ];
-  doCheck = stdenv.isLinux;
+  ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk ];
+  doCheck = stdenv.hostPlatform.isLinux;
   meta = with lib; {
     mainProgram = "hc-runner";
     homepage = "https://github.com/n8henrie/hc-runner";

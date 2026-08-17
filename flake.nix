@@ -14,7 +14,7 @@
       eachSystem =
         with nixpkgs.lib;
         f: foldAttrs mergeAttrs { } (map (s: mapAttrs (_: v: { ${s} = v; }) (f s)) systems);
-      inherit ((fromTOML (builtins.readFile ./Cargo.toml)).package) name;
+      inherit ((nixpkgs.lib.importTOML ./Cargo.toml).package) name;
     in
     {
       overlays = {
