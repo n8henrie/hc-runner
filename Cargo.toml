@@ -1,6 +1,6 @@
 [package]
 name = "hc-runner"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2024"
 description = "Command runner for healthchecks.io"
 license = "MIT"
