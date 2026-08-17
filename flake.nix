@@ -36,10 +36,46 @@
           ${name} = pkgs.callPackage ./package.nix { };
         };
 
-        apps.default = {
-          type = "app";
-          program = pkgs.lib.getExe self.packages.${system}.${name};
-        };
+        apps =
+          let
+            hc-runner = {
+              type = "app";
+              program = pkgs.lib.getExe self.packages.${system}.${name};
+            };
+          in
+          {
+            inherit hc-runner;
+            default = hc-runner;
+            macos-perms = {
+              type = "app";
+              program = pkgs.lib.getExe (
+                pkgs.writeShellApplication {
+                  name = "perms-script";
+                  text = ''
+                    set -x
+
+                    TMPDIR=$(mktemp -d)
+                    trap 'launchctl bootout gui/$UID/com.n8henrie.${name}_tmp' EXIT
+
+                    launchctl submit \
+                      -l com.n8henrie.${name}_tmp \
+                      -o "$TMPDIR"/out.txt \
+                      -e "$TMPDIR"/err.txt \
+                      -- \
+                      ${pkgs.lib.getExe self.outputs.packages.${system}.${name}} \
+                      --slug hc-runner-setup-delete-me \
+                      --url http://fake \
+                      -- \
+                      ls ~/Desktop ~/Downloads ~/Documents
+
+                    until test -s "$TMPDIR"/out.txt
+                      do sleep 0.1
+                    done
+                  '';
+                }
+              );
+            };
+          };
 
         devShells.default = pkgs.mkShell {
           inputsFrom = [ self.outputs.packages.${system}.${name} ];
