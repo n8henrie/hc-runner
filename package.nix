@@ -6,6 +6,7 @@
   rustPlatform,
   openssl,
   pkg-config,
+  cacert,
 }:
 rustPlatform.buildRustPackage {
   inherit ((lib.importTOML ./Cargo.toml).package) name version;
@@ -21,6 +22,7 @@ rustPlatform.buildRustPackage {
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk ];
   doCheck = stdenv.hostPlatform.isLinux;
   dontUseCargoParallelTests = true;
+  nativeCheckInputs = [ cacert ];
   meta = with lib; {
     mainProgram = "hc-runner";
     homepage = "https://github.com/n8henrie/hc-runner";
