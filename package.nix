@@ -15,7 +15,7 @@ rustPlatform.buildRustPackage {
   nativeBuildInputs = [
     pkg-config
   ]
-  ++ (lib.optionals (stdenv.hostPlatform.isLinux && stdenv.isAarch64) [ perl ]);
+  ++ (lib.optionals (with stdenv.hostPlatform; isLinux && isAarch64) [ perl ]);
   buildInputs = [
     openssl
   ]
