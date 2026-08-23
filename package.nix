@@ -20,8 +20,8 @@ rustPlatform.buildRustPackage {
     openssl
   ]
   ++ lib.optionals stdenv.hostPlatform.isDarwin [ apple-sdk ];
-  doCheck = stdenv.hostPlatform.isLinux;
   dontUseCargoParallelTests = true;
+  __darwinAllowLocalNetworking = true;
   nativeCheckInputs = [ cacert ];
   meta = with lib; {
     mainProgram = "hc-runner";
